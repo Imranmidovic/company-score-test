@@ -32,6 +32,17 @@ export const config = {
   server: {
     port: env.PORT,
   },
+  retry: {
+    enrichment: {
+      maxAttempts: 3,
+      factor: 2,
+      minTimeoutInMs: 1_000,
+      maxTimeoutInMs: 10_000,
+    },
+    llm: {
+      maxAttempts: 3,
+    },
+  },
   apis: {
     github: {
       baseUrl: env.GITHUB_API_BASE_URL,

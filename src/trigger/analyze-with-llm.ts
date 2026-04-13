@@ -1,5 +1,6 @@
 import { task } from "@trigger.dev/sdk";
 import { generateText, Output } from "ai";
+import { config } from "../config.js";
 import { getModel } from "../llm.js";
 import {
   type EnrichmentResult,
@@ -11,9 +12,7 @@ import {
 
 export const analyzeWithLLM = task({
   id: "analyze-with-llm",
-  retry: {
-    maxAttempts: 3,
-  },
+  retry: config.retry.llm,
   run: async (payload: {
     domain: string;
     github: GitHubData | null;

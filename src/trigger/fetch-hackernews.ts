@@ -9,12 +9,7 @@ import {
 
 export const fetchHackerNews = task({
   id: "fetch-hackernews",
-  retry: {
-    maxAttempts: 3,
-    factor: 2,
-    minTimeoutInMs: 1000,
-    maxTimeoutInMs: 10_000,
-  },
+  retry: config.retry.enrichment,
   run: async (payload: {
     domain: string;
   }): Promise<EnrichmentResult<HackerNewsData>> => {

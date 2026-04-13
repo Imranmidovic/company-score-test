@@ -9,12 +9,7 @@ import {
 
 export const fetchGitHub = task({
   id: "fetch-github",
-  retry: {
-    maxAttempts: 3,
-    factor: 2,
-    minTimeoutInMs: 1000,
-    maxTimeoutInMs: 10_000,
-  },
+  retry: config.retry.enrichment,
   run: async (payload: {
     orgName: string;
   }): Promise<EnrichmentResult<GitHubData>> => {
