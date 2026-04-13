@@ -24,6 +24,8 @@ export const gitHubRepoSchema = z.object({
 
 export type GitHubRepo = z.infer<typeof gitHubRepoSchema>;
 
+export const gitHubReposResponseSchema = z.array(gitHubRepoSchema.passthrough());
+
 export const gitHubDataSchema = z.object({
   orgName: z.string(),
   description: z.string().nullable(),

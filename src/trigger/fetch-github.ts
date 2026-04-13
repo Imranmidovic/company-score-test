@@ -4,12 +4,9 @@ import { fetchJson, HttpError } from "../http.js";
 import {
   type EnrichmentResult,
   type GitHubData,
-  type GitHubRepo,
   gitHubOrgResponseSchema,
-  gitHubRepoSchema,
+  gitHubReposResponseSchema,
 } from "../types.js";
-import { z } from "zod";
-
 export const fetchGitHub = task({
   id: "fetch-github",
   retry: config.retry.enrichment,
@@ -26,15 +23,10 @@ export const fetchGitHub = task({
         gitHubOrgResponseSchema,
       );
 
-      const repos = await fetchJson(
+      const topRepos = await fetchJson(
         `${baseUrl}/orgs/${encodedOrg}/repos?sort=stars&direction=desc&per_page=10`,
-        z.array(z.unknown()),
+        gitHubReposResponseSchema,
       );
-
-      const topRepos: GitHubRepo[] = repos
-        .map((repo) => gitHubRepoSchema.safeParse(repo))
-        .filter((result) => result.success)
-        .map((result) => result.data);
 
       return {
         success: true,
