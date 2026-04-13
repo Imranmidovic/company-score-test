@@ -1,7 +1,6 @@
 import { task } from "@trigger.dev/sdk";
 import { generateText, Output } from "ai";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { config } from "../config.js";
+import { getModel } from "../llm.js";
 import {
   type EnrichmentResult,
   type GitHubData,
@@ -23,11 +22,7 @@ export const analyzeWithLLM = task({
     const { domain, github, hackerNews } = payload;
 
     try {
-      const google = createGoogleGenerativeAI({
-        apiKey: config.llm.apiKey,
-      });
-
-      const model = google(config.llm.model);
+      const model = getModel();
 
       const prompt = buildPrompt(domain, github, hackerNews);
 
