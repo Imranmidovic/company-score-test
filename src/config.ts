@@ -3,7 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   TRIGGER_SECRET_KEY: z.string().min(1),
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1),
-  LLM_MODEL: z.string().default("gemini-2.0-flash"),
+  LLM_MODEL: z.string().default("gemini-2.5-flash"),
   PORT: z.coerce.number().default(3000),
   GITHUB_API_BASE_URL: z.string().url().default("https://api.github.com"),
   HN_API_BASE_URL: z

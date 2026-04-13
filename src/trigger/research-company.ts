@@ -19,13 +19,11 @@ export const researchCompany = task({
     const { domain } = payload;
     const orgName = extractOrgName(domain);
 
-    // Fan out enrichment tasks in parallel
-    const [githubResult, hnResult] = await Promise.all([
-      fetchGitHub.triggerAndWait({ orgName }),
-      fetchHackerNews.triggerAndWait({ domain }),
-    ]);
+    // Run enrichment tasks sequentially (Trigger.dev doesn't support Promise.all with triggerAndWait)
+    const githubResult = await fetchGitHub.triggerAndWait({ orgName });
+    const hnResult = await fetchHackerNews.triggerAndWait({ domain });
 
-    // Extract enrichment data — map triggerAndWait result to our types
+    // Extract enrichment data — map wait result to our types
     const github: EnrichmentResult<GitHubData> = githubResult.ok
       ? githubResult.output
       : { success: false, error: `Task failed: ${String(githubResult.error)}` };

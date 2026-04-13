@@ -49,17 +49,10 @@ app.get("/api/research/:runId", async (req: Request, res: Response) => {
     const run = await runs.retrieve<typeof researchCompany>(runId);
 
     if (run.status === "COMPLETED") {
-      let report: CompanyReport | undefined;
-
-      if (run.outputPresignedUrl) {
-        const outputResponse = await fetch(run.outputPresignedUrl);
-        report = (await outputResponse.json()) as CompanyReport;
-      }
-
       res.json({
         runId: run.id,
         status: run.status,
-        report,
+        report: run.output as CompanyReport,
       });
       return;
     }
