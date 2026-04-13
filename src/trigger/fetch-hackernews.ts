@@ -1,9 +1,11 @@
 import { task } from "@trigger.dev/sdk";
 import { config } from "../config.js";
+import { fetchJson } from "../http.js";
 import {
   type EnrichmentResult,
   type HackerNewsData,
   type HNStory,
+  hnSearchResponseSchema,
   hnStorySchema,
 } from "../types.js";
 
@@ -18,19 +20,7 @@ export const fetchHackerNews = task({
 
     try {
       const url = `${baseUrl}/search?query=${encodeURIComponent(domain)}&tags=story&hitsPerPage=10`;
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: `HN API failed: ${response.status} ${response.statusText}`,
-        };
-      }
-
-      const json = (await response.json()) as {
-        hits: unknown[];
-        nbHits: number;
-      };
+      const json = await fetchJson(url, hnSearchResponseSchema);
 
       const stories: HNStory[] = json.hits
         .map((hit) => hnStorySchema.safeParse(hit))

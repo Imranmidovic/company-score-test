@@ -1,11 +1,14 @@
 import { task } from "@trigger.dev/sdk";
 import { config } from "../config.js";
+import { fetchJson, HttpError } from "../http.js";
 import {
   type EnrichmentResult,
   type GitHubData,
   type GitHubRepo,
+  gitHubOrgResponseSchema,
   gitHubRepoSchema,
 } from "../types.js";
+import { z } from "zod";
 
 export const fetchGitHub = task({
   id: "fetch-github",
@@ -15,48 +18,20 @@ export const fetchGitHub = task({
   }): Promise<EnrichmentResult<GitHubData>> => {
     const { orgName } = payload;
     const baseUrl = config.apis.github.baseUrl;
+    const encodedOrg = encodeURIComponent(orgName);
 
     try {
-      // Fetch org info
-      const orgResponse = await fetch(`${baseUrl}/orgs/${encodeURIComponent(orgName)}`);
-
-      if (orgResponse.status === 403) {
-        const remaining = orgResponse.headers.get("x-ratelimit-remaining");
-        if (remaining === "0") {
-          return {
-            success: false,
-            error: "GitHub API rate limit exceeded",
-          };
-        }
-      }
-
-      if (!orgResponse.ok) {
-        return {
-          success: false,
-          error: `GitHub org fetch failed: ${orgResponse.status} ${orgResponse.statusText}`,
-        };
-      }
-
-      const orgJson = (await orgResponse.json()) as {
-        description: string | null;
-        public_repos: number;
-      };
-
-      // Fetch top repos by stars
-      const reposResponse = await fetch(
-        `${baseUrl}/orgs/${encodeURIComponent(orgName)}/repos?sort=stars&direction=desc&per_page=10`
+      const org = await fetchJson(
+        `${baseUrl}/orgs/${encodedOrg}`,
+        gitHubOrgResponseSchema,
       );
 
-      if (!reposResponse.ok) {
-        return {
-          success: false,
-          error: `GitHub repos fetch failed: ${reposResponse.status} ${reposResponse.statusText}`,
-        };
-      }
+      const repos = await fetchJson(
+        `${baseUrl}/orgs/${encodedOrg}/repos?sort=stars&direction=desc&per_page=10`,
+        z.array(z.unknown()),
+      );
 
-      const reposJson = (await reposResponse.json()) as unknown[];
-
-      const topRepos: GitHubRepo[] = reposJson
+      const topRepos: GitHubRepo[] = repos
         .map((repo) => gitHubRepoSchema.safeParse(repo))
         .filter((result) => result.success)
         .map((result) => result.data);
@@ -65,12 +40,16 @@ export const fetchGitHub = task({
         success: true,
         data: {
           orgName,
-          description: orgJson.description,
-          publicRepos: orgJson.public_repos,
+          description: org.description,
+          publicRepos: org.public_repos,
           topRepos,
         },
       };
     } catch (error) {
+      if (error instanceof HttpError && error.isRateLimited) {
+        return { success: false, error: "GitHub API rate limit exceeded" };
+      }
+
       const message =
         error instanceof Error ? error.message : "Unknown GitHub fetch error";
       return { success: false, error: message };

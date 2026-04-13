@@ -6,7 +6,14 @@ export type EnrichmentSuccess<T> = { success: true; data: T };
 export type EnrichmentFailure = { success: false; error: string };
 export type EnrichmentResult<T> = EnrichmentSuccess<T> | EnrichmentFailure;
 
-// --- GitHub types ---
+// --- GitHub API response schemas ---
+
+export const gitHubOrgResponseSchema = z.object({
+  description: z.string().nullable(),
+  public_repos: z.number(),
+});
+
+export type GitHubOrgResponse = z.infer<typeof gitHubOrgResponseSchema>;
 
 export const gitHubRepoSchema = z.object({
   name: z.string(),
@@ -26,7 +33,14 @@ export const gitHubDataSchema = z.object({
 
 export type GitHubData = z.infer<typeof gitHubDataSchema>;
 
-// --- Hacker News types ---
+// --- Hacker News API response schema ---
+
+export const hnSearchResponseSchema = z.object({
+  hits: z.array(z.unknown()),
+  nbHits: z.number(),
+});
+
+export type HNSearchResponse = z.infer<typeof hnSearchResponseSchema>;
 
 export const hnStorySchema = z.object({
   title: z.string(),
