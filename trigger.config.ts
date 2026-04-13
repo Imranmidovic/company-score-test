@@ -1,7 +1,7 @@
 import { defineConfig } from "@trigger.dev/sdk";
 
 export default defineConfig({
-  project: "company-research-agent",
+  project: "proj_tdaothnnlntpskqzwcnf",
   dirs: ["src/trigger"],
   maxDuration: 3600,
   retries: {

@@ -33,10 +33,10 @@ export const researchCompany = task({
       : { success: false, error: `Task failed: ${String(hnResult.error)}` };
 
     // Prepare LLM input — pass data if available, null if not
-    const githubData: GitHubData | null =
-      github.success ? github.data : null;
-    const hnData: HackerNewsData | null =
-      hackerNews.success ? hackerNews.data : null;
+    const githubData: GitHubData | null = github.success ? github.data : null;
+    const hnData: HackerNewsData | null = hackerNews.success
+      ? hackerNews.data
+      : null;
 
     // Run LLM analysis
     const llmResult = await analyzeWithLLM.triggerAndWait({
@@ -47,7 +47,10 @@ export const researchCompany = task({
 
     const analysis = llmResult.ok
       ? llmResult.output
-      : { success: false as const, error: `LLM task failed: ${String(llmResult.error)}` };
+      : {
+          success: false as const,
+          error: `LLM task failed: ${String(llmResult.error)}`,
+        };
 
     return {
       domain,
