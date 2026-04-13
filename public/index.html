@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Company Research Agent</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+
+    .search-form input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-form input:focus {
+      border-color: #333;
+    }
+
+    .search-form input:disabled {
+      background: #eee;
+    }
+
+    .search-form button {
+      padding: 10px 20px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .search-form button:hover:not(:disabled) {
+      background: #333;
+    }
+
+    .search-form button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 48px 0;
+      color: #666;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid #ddd;
+      border-top-color: #1a1a1a;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 12px 16px;
+      border-radius: 8px;
+    }
+
+    .report { display: flex; flex-direction: column; gap: 24px; }
+
+    .score-card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .score-number {
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .score-label {
+      font-size: 13px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-top: 12px;
+    }
+
+    .badge-hot { background: #dcfce7; color: #166534; }
+    .badge-warm { background: #fef9c3; color: #854d0e; }
+    .badge-cold { background: #f3f4f6; color: #374151; }
+
+    .analysis-text {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 15px;
+    }
+
+    .section {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .section h3 {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .section-unavailable {
+      color: #999;
+      font-style: italic;
+      font-size: 14px;
+    }
+
+    .org-info {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    .org-info span { font-weight: 600; color: #1a1a1a; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid #e5e5e5;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #666;
+    }
+
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .stars { font-variant-numeric: tabular-nums; }
+
+    .story-list { list-style: none; }
+
+    .story-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
+    }
+
+    .story-list li:last-child { border-bottom: none; }
+
+    .story-points {
+      display: inline-block;
+      min-width: 40px;
+      font-weight: 600;
+      color: #666;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Company Research Agent</h1>
+    <p class="subtitle">Enter a company domain to analyze its tech presence</p>
+
+    <form class="search-form" id="form">
+      <input type="text" id="domain" placeholder="stripe.com" required>
+      <button type="submit" id="btn">Research</button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("form");
+    const input = document.getElementById("domain");
+    const btn = document.getElementById("btn");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const domain = input.value.trim();
+      if (!domain) return;
+
+      input.disabled = true;
+      btn.disabled = true;
+      result.innerHTML = '<div class="loading"><div class="spinner"></div><div>Researching ' + escapeHtml(domain) + '...</div></div>';
+
+      try {
+        const res = await fetch("/api/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "Failed to start research");
+        }
+
+        const { runId } = await res.json();
+        pollForResult(runId);
+      } catch (err) {
+        showError(err.message);
+        input.disabled = false;
+        btn.disabled = false;
+      }
+    });
+
+    function pollForResult(runId) {
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch("/api/research/" + runId);
+          const data = await res.json();
+
+          if (data.status === "COMPLETED") {
+            clearInterval(interval);
+            renderReport(data.report);
+            input.disabled = false;
+            btn.disabled = false;
+          } else if (data.status === "FAILED" || data.status === "CANCELED" || data.status === "SYSTEM_FAILURE") {
+            clearInterval(interval);
+            showError(data.error || "Research failed");
+            input.disabled = false;
+            btn.disabled = false;
+          }
+        } catch {
+          clearInterval(interval);
+          showError("Lost connection to server");
+          input.disabled = false;
+          btn.disabled = false;
+        }
+      }, 2000);
+    }
+
+    function renderReport(report) {
+      const analysis = report.analysis?.success ? report.analysis.data : null;
+      const github = report.github?.success ? report.github.data : null;
+      const hn = report.hackerNews?.success ? report.hackerNews.data : null;
+
+      let html = '<div class="report">';
+
+      // Score card
+      if (analysis) {
+        const badgeClass = "badge-" + analysis.recommendation;
+        html += '<div class="score-card">';
+        html += '<div class="score-number">' + analysis.score + '</div>';
+        html += '<div class="score-label">Tech Score</div>';
+        html += '<span class="badge ' + badgeClass + '">' + analysis.recommendation + '</span>';
+        html += '</div>';
+        html += '<div class="analysis-text">' + escapeHtml(analysis.analysis) + '</div>';
+      } else {
+        html += '<div class="error">LLM analysis unavailable: ' + escapeHtml(report.analysis?.error || "Unknown error") + '</div>';
+      }
+
+      // GitHub section
+      html += '<div class="section"><h3>GitHub</h3>';
+      if (github) {
+        html += '<div class="org-info">';
+        html += '<span>' + escapeHtml(github.orgName) + '</span>';
+        if (github.description) html += ' &mdash; ' + escapeHtml(github.description);
+        html += '<br>' + github.publicRepos + ' public repositories';
+        html += '</div>';
+
+        if (github.topRepos.length > 0) {
+          html += '<table><thead><tr><th>Repository</th><th>Stars</th><th>Language</th></tr></thead><tbody>';
+          for (const repo of github.topRepos) {
+            html += '<tr>';
+            html += '<td>' + escapeHtml(repo.name) + '</td>';
+            html += '<td class="stars">' + repo.stargazers_count + '</td>';
+            html += '<td>' + escapeHtml(repo.language || "—") + '</td>';
+            html += '</tr>';
+          }
+          html += '</tbody></table>';
+        }
+      } else {
+        html += '<p class="section-unavailable">GitHub data unavailable</p>';
+      }
+      html += '</div>';
+
+      // Hacker News section
+      html += '<div class="section"><h3>Hacker News</h3>';
+      if (hn) {
+        html += '<p class="org-info">' + hn.totalHits + ' total mentions</p>';
+        if (hn.stories.length > 0) {
+          html += '<ul class="story-list">';
+          for (const story of hn.stories) {
+            html += '<li>';
+            html += '<span class="story-points">' + (story.points || 0) + ' pts</span> ';
+            html += escapeHtml(story.title);
+            html += '</li>';
+          }
+          html += '</ul>';
+        }
+      } else {
+        html += '<p class="section-unavailable">Hacker News data unavailable</p>';
+      }
+      html += '</div>';
+
+      html += '</div>';
+      result.innerHTML = html;
+    }
+
+    function showError(msg) {
+      result.innerHTML = '<div class="error">' + escapeHtml(msg) + '</div>';
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

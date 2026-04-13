@@ -5,6 +5,7 @@ import { researchRequestSchema, type CompanyReport } from "./types.js";
 import type { researchCompany } from "./trigger/research-company.js";
 
 const app = express();
+app.use(express.static("public"));
 app.use(express.json());
 
 // POST /api/research — trigger a new research run
