@@ -14,6 +14,11 @@ POST /api/research { domain: "stripe.com" }
 
 **Tech stack:** Node.js, TypeScript, Trigger.dev v3, Vercel AI SDK, Express, Zod.
 
+**Key design decisions:**
+- Centralized config (`src/config.ts`) — all env vars, API base URLs, and retry settings validated with Zod at startup. No hardcoded values in business logic.
+- LLM provider abstraction (`src/llm.ts`) — task files don't know which model or provider is configured. Swappable by changing one file.
+- Typed error handling — enrichment tasks return discriminated unions (`success`/`failure`), never throw. The orchestrator always completes, even with partial data.
+
 ## Setup
 
 ### Prerequisites
@@ -30,30 +35,43 @@ npm install
 
 ### Environment Variables
 
-Copy `.env` and fill in your keys:
+Copy `.env.example` to `.env` and fill in your keys:
+
+```bash
+cp .env.example .env
+```
 
 ```env
-TRIGGER_SECRET_KEY=your-trigger-secret-key
-GOOGLE_GENERATIVE_AI_API_KEY=your-google-api-key
-LLM_MODEL=gemini-2.0-flash          # optional
-PORT=3000                             # optional
-GITHUB_API_BASE_URL=https://api.github.com    # optional
-HN_API_BASE_URL=https://hn.algolia.com/api/v1 # optional
+TRIGGER_SECRET_KEY=your-trigger-secret-key       # required
+GOOGLE_GENERATIVE_AI_API_KEY=your-google-api-key  # required
+LLM_MODEL=gemini-2.5-flash                        # optional
+PORT=3000                                          # optional
+GITHUB_API_BASE_URL=https://api.github.com         # optional
+HN_API_BASE_URL=https://hn.algolia.com/api/v1     # optional
 ```
 
 ### Running
 
-Start the Trigger.dev dev server and the Express server in separate terminals:
+Start both servers with a single command:
 
 ```bash
-# Terminal 1: Trigger.dev
-npx trigger dev
-
-# Terminal 2: Express server
 npm run dev
 ```
 
-### Usage
+This runs Trigger.dev and the Express server concurrently. You can also run them separately:
+
+```bash
+npm run dev:trigger   # Trigger.dev only
+npm run dev:server    # Express only
+```
+
+## Usage
+
+### Web UI
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. Enter a company domain (e.g. `stripe.com`) and click "Research". Results appear automatically when the analysis is complete.
+
+### API
 
 **Trigger a research run:**
 
@@ -80,3 +98,4 @@ curl http://localhost:3000/api/research/run_abc123
 - **Webhook notifications** — notify when a research run completes instead of polling
 - **Rate limit handling** — smarter backoff for GitHub's 60 req/hour unauthenticated limit
 - **Tests** — unit tests for enrichment parsing, integration tests with mocked APIs
+- **Additional LLM providers** — OpenAI, Anthropic support via the existing `src/llm.ts` abstraction
