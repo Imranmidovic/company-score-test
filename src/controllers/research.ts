@@ -1,7 +1,7 @@
 import { type Request, type Response } from "express";
 import { tasks, runs } from "@trigger.dev/sdk";
 import { researchRequestSchema, type CompanyReport } from "../types.js";
-import type { researchCompany } from "../trigger/research-company.js";
+import type { researchCompany } from "../service/trigger-service.js";
 
 export async function triggerResearch(
   req: Request,

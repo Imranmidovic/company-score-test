@@ -1,8 +1,10 @@
+import { task } from "@trigger.dev/sdk";
 import { generateText, Output } from "ai";
 import { getModel } from "../lib/llm.js";
 import { fetchJson, HttpError } from "../util/http.js";
 import { config } from "../config.js";
 import {
+  type CompanyReport,
   type EnrichmentResult,
   type GitHubData,
   type HackerNewsData,
@@ -172,3 +174,84 @@ function buildPrompt(
 
   return parts.join("\n");
 }
+
+// --- Trigger.dev task definitions ---
+
+export const fetchGitHub = task({
+  id: "fetch-github",
+  retry: config.retry.enrichment,
+  run: async (payload: {
+    orgName: string;
+  }): Promise<EnrichmentResult<GitHubData>> => {
+    return fetchGitHubData(payload.orgName);
+  },
+});
+
+export const fetchHackerNews = task({
+  id: "fetch-hackernews",
+  retry: config.retry.enrichment,
+  run: async (payload: {
+    domain: string;
+  }): Promise<EnrichmentResult<HackerNewsData>> => {
+    return fetchHackerNewsData(payload.domain);
+  },
+});
+
+export const analyzeWithLLM = task({
+  id: "analyze-with-llm",
+  retry: config.retry.llm,
+  run: async (payload: {
+    domain: string;
+    github: GitHubData | null;
+    hackerNews: HackerNewsData | null;
+  }): Promise<EnrichmentResult<LLMAnalysis>> => {
+    return analyzeCompanyWithLLM(payload);
+  },
+});
+
+export const researchCompany = task({
+  id: "research-company",
+  run: async (payload: { domain: string }): Promise<CompanyReport> => {
+    const { domain } = payload;
+    const orgName = extractOrgName(domain);
+
+    // Run enrichment tasks sequentially (Trigger.dev doesn't support Promise.all with triggerAndWait)
+    const githubResult = await fetchGitHub.triggerAndWait({ orgName });
+    const hnResult = await fetchHackerNews.triggerAndWait({ domain });
+
+    const github: EnrichmentResult<GitHubData> = githubResult.ok
+      ? githubResult.output
+      : { success: false, error: `Task failed: ${String(githubResult.error)}` };
+
+    const hackerNews: EnrichmentResult<HackerNewsData> = hnResult.ok
+      ? hnResult.output
+      : { success: false, error: `Task failed: ${String(hnResult.error)}` };
+
+    const githubData: GitHubData | null = github.success ? github.data : null;
+    const hnData: HackerNewsData | null = hackerNews.success
+      ? hackerNews.data
+      : null;
+
+    const llmResult = await analyzeWithLLM.triggerAndWait({
+      domain,
+      github: githubData,
+      hackerNews: hnData,
+    });
+
+    const analysis = llmResult.ok
+      ? llmResult.output
+      : {
+          success: false as const,
+          error: `LLM task failed: ${String(llmResult.error)}`,
+        };
+
+    return {
+      domain,
+      orgName,
+      github,
+      hackerNews,
+      analysis,
+      completedAt: new Date().toISOString(),
+    };
+  },
+});
