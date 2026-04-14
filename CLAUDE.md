@@ -35,13 +35,22 @@ Express server exposes `POST /api/research` (trigger) and `GET /api/research/:ru
 ## File Structure
 
 ```
-src/config.ts          — Zod-validated centralized config
-src/types.ts           — All shared types, Zod schemas, discriminated unions
-src/server.ts          — Express POST + GET endpoints
+src/config.ts                  — Zod-validated centralized config
+src/types.ts                   — All shared types, Zod schemas, discriminated unions
+src/server.ts                  — Express app setup + router mount + listen
+src/router.ts                  — All endpoint definitions
+src/controllers/
+  research.ts                  — Handler functions for research endpoints
+src/service/
+  trigger-service.ts           — Business logic (GitHub, HN, LLM, helpers)
+src/lib/
+  llm.ts                       — AI SDK getModel() factory
+src/util/
+  http.ts                      — Generic fetchJson wrapper + HttpError
 src/trigger/
-  fetch-github.ts      — GitHub enrichment subtask
-  fetch-hackernews.ts  — HN enrichment subtask
-  analyze-with-llm.ts  — LLM analysis subtask
-  research-company.ts  — Orchestrator task
-trigger.config.ts      — Trigger.dev config (handled by Trigger CLI, not tsc)
+  fetch-github.ts              — GitHub enrichment subtask (thin wrapper)
+  fetch-hackernews.ts          — HN enrichment subtask (thin wrapper)
+  analyze-with-llm.ts          — LLM analysis subtask (thin wrapper)
+  research-company.ts          — Orchestrator task
+trigger.config.ts              — Trigger.dev config (handled by Trigger CLI, not tsc)
 ```
