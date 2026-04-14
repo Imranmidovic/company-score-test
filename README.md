@@ -15,9 +15,31 @@ POST /api/research { domain: "stripe.com" }
 **Tech stack:** Node.js, TypeScript, Trigger.dev v3, Vercel AI SDK, Express, Zod.
 
 **Key design decisions:**
+- Layered architecture — router, controllers, service layer, lib, and util directories with clear separation of concerns.
 - Centralized config (`src/config.ts`) — all env vars, API base URLs, and retry settings validated with Zod at startup. No hardcoded values in business logic.
-- LLM provider abstraction (`src/llm.ts`) — task files don't know which model or provider is configured. Swappable by changing one file.
-- Typed error handling — enrichment tasks return discriminated unions (`success`/`failure`), never throw. The orchestrator always completes, even with partial data.
+- LLM provider abstraction (`src/lib/llm.ts`) — service layer doesn't know which model or provider is configured. Swappable by changing one file.
+- Typed error handling — enrichment functions return discriminated unions (`success`/`failure`), never throw. The orchestrator always completes, even with partial data.
+- GitHub org discovery — uses GitHub Search API to find the correct org for a domain, not just the domain prefix.
+- HN relevance filtering — LLM prompt instructs the model to ignore stories about similarly-named but different companies.
+
+## File Structure
+
+```
+src/
+  config.ts              — Zod-validated centralized config
+  types.ts               — All shared types, Zod schemas, discriminated unions
+  server.ts              — Express app setup + router mount + listen
+  router.ts              — All endpoint definitions
+  controllers/
+    research.ts          — Handler functions for research endpoints
+  service/
+    trigger-service.ts   — Business logic + Trigger.dev task definitions
+  lib/
+    llm.ts               — AI SDK getModel() factory
+  util/
+    http.ts              — Generic fetchJson wrapper + HttpError
+trigger.config.ts        — Trigger.dev config (points to src/service)
+```
 
 ## Setup
 
@@ -44,7 +66,7 @@ cp .env.example .env
 ```env
 TRIGGER_SECRET_KEY=your-trigger-secret-key       # required
 GOOGLE_GENERATIVE_AI_API_KEY=your-google-api-key  # required
-LLM_MODEL=gemini-2.5-flash                        # optional
+LLM_MODEL=gemini-3-flash-preview                   # optional
 PORT=3000                                          # optional
 GITHUB_API_BASE_URL=https://api.github.com         # optional
 HN_API_BASE_URL=https://hn.algolia.com/api/v1     # optional
@@ -98,4 +120,4 @@ curl http://localhost:3000/api/research/run_abc123
 - **Webhook notifications** — notify when a research run completes instead of polling
 - **Rate limit handling** — smarter backoff for GitHub's 60 req/hour unauthenticated limit
 - **Tests** — unit tests for enrichment parsing, integration tests with mocked APIs
-- **Additional LLM providers** — OpenAI, Anthropic support via the existing `src/llm.ts` abstraction
+- **Additional LLM providers** — OpenAI, Anthropic support via the existing `src/lib/llm.ts` abstraction
