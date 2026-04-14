@@ -26,6 +26,15 @@ export type GitHubRepo = z.infer<typeof gitHubRepoSchema>;
 
 export const gitHubReposResponseSchema = z.array(gitHubRepoSchema.passthrough());
 
+export const gitHubSearchUsersResponseSchema = z.object({
+  total_count: z.number(),
+  items: z.array(z.object({
+    login: z.string(),
+  })),
+});
+
+export type GitHubSearchUsersResponse = z.infer<typeof gitHubSearchUsersResponseSchema>;
+
 export const gitHubDataSchema = z.object({
   orgName: z.string(),
   description: z.string().nullable(),

@@ -12,19 +12,33 @@ import {
   type LLMAnalysis,
   gitHubOrgResponseSchema,
   gitHubReposResponseSchema,
+  gitHubSearchUsersResponseSchema,
   hnSearchResponseSchema,
   hnStorySchema,
   llmAnalysisSchema,
 } from "../types.js";
 
-export function extractOrgName(domain: string): string {
+async function findGitHubOrg(domain: string): Promise<string> {
+  const baseUrl = config.apis.github.baseUrl;
+  try {
+    const result = await fetchJson(
+      `${baseUrl}/search/users?q=${encodeURIComponent(domain)}+type:org`,
+      gitHubSearchUsersResponseSchema,
+    );
+    if (result.items.length > 0) {
+      return result.items[0]!.login;
+    }
+  } catch {
+    // Fall through to fallback
+  }
   return domain.split(".")[0]!;
 }
 
 export async function fetchGitHubData(
-  orgName: string,
+  domain: string,
 ): Promise<EnrichmentResult<GitHubData>> {
   const baseUrl = config.apis.github.baseUrl;
+  const orgName = await findGitHubOrg(domain);
   const encodedOrg = encodeURIComponent(orgName);
 
   try {
@@ -158,6 +172,7 @@ function buildPrompt(
 
   if (hackerNews) {
     parts.push("## Hacker News Mentions");
+    parts.push(`Note: Some results may be about similarly-named but different companies. Only consider stories that are actually about ${domain}. Ignore irrelevant results in your analysis.`);
     parts.push(`Total mentions found: ${hackerNews.totalHits}`);
     if (hackerNews.stories.length > 0) {
       parts.push("Top stories:");
@@ -181,9 +196,9 @@ export const fetchGitHub = task({
   id: "fetch-github",
   retry: config.retry.enrichment,
   run: async (payload: {
-    orgName: string;
+    domain: string;
   }): Promise<EnrichmentResult<GitHubData>> => {
-    return fetchGitHubData(payload.orgName);
+    return fetchGitHubData(payload.domain);
   },
 });
 
@@ -213,10 +228,9 @@ export const researchCompany = task({
   id: "research-company",
   run: async (payload: { domain: string }): Promise<CompanyReport> => {
     const { domain } = payload;
-    const orgName = extractOrgName(domain);
 
     // Run enrichment tasks sequentially (Trigger.dev doesn't support Promise.all with triggerAndWait)
-    const githubResult = await fetchGitHub.triggerAndWait({ orgName });
+    const githubResult = await fetchGitHub.triggerAndWait({ domain });
     const hnResult = await fetchHackerNews.triggerAndWait({ domain });
 
     const github: EnrichmentResult<GitHubData> = githubResult.ok
@@ -231,6 +245,8 @@ export const researchCompany = task({
     const hnData: HackerNewsData | null = hackerNews.success
       ? hackerNews.data
       : null;
+
+    const orgName = github.success ? github.data.orgName : domain.split(".")[0]!;
 
     const llmResult = await analyzeWithLLM.triggerAndWait({
       domain,
