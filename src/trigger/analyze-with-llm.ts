@@ -1,7 +1,7 @@
 import { task } from "@trigger.dev/sdk";
 import { generateText, Output } from "ai";
 import { config } from "../config.js";
-import { getModel } from "../llm.js";
+import { getModel } from "../lib/llm.js";
 import {
   type EnrichmentResult,
   type GitHubData,
