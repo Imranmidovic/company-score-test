@@ -16,6 +16,7 @@ export const researchCompany = task({
     const { domain } = payload;
     const orgName = extractOrgName(domain);
 
+    // Run enrichment tasks sequentially (Trigger.dev doesn't support Promise.all with triggerAndWait)
     const githubResult = await fetchGitHub.triggerAndWait({ orgName });
     const hnResult = await fetchHackerNews.triggerAndWait({ domain });
 
