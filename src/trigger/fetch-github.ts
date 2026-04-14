@@ -1,6 +1,6 @@
 import { task } from "@trigger.dev/sdk";
 import { config } from "../config.js";
-import { fetchJson, HttpError } from "../http.js";
+import { fetchJson, HttpError } from "../util/http.js";
 import {
   type EnrichmentResult,
   type GitHubData,
